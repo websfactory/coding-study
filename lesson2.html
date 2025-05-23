@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>파이썬 탐험대의 신비한 여행 🚀</title>
+  <title>몬스터를 피해 전설의 보물을 찾아라! 💎</title>
   <style>
     /* 기본 스타일 */
     * {
@@ -418,6 +418,18 @@
       font-weight: bold;
     }
 
+    /* 코드 태그 스타일 */
+    code {
+      background-color: #f5f5f5;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+      color: #d32f2f;
+      font-weight: bold;
+    }
+
     /* 프로그레스 바 */
     .progress-container {
       position: absolute;
@@ -497,13 +509,13 @@
     </div>
 
     <!-- 채팅 영역 -->
-    <div class="chat-container" id="chatContainer" role="log" aria-live="polite"></div>
+    <div class="chat-container" id="chatContainer"></div>
 
     <!-- 입력 영역 -->
     <div class="input-container">
       <input type="text" class="message-input" id="messageInput" placeholder="메시지를 입력하세요...">
-      <button class="btn" id="sendBtn" aria-label="전송">📤</button>
-      <button class="btn backpack-btn" id="backpackBtn" aria-label="내가방 보기">🎒</button>
+      <button class="btn" id="sendBtn">📤</button>
+      <button class="btn backpack-btn" id="backpackBtn">🎒</button>
     </div>
   </div>
 
@@ -556,8 +568,8 @@
       playerName: '',
       currentStage: 'intro',
       bag: [],
-      poppedItem: '',
       isTyping: false,
+      lastPoppedItem: null, // pop으로 꺼낸 아이템 임시 저장
       
       // 백팩 업데이트
       updateBackpack: function() {
@@ -570,7 +582,7 @@
         this.bag.forEach(item => {
           const itemElement = document.createElement('div');
           itemElement.className = 'item';
-          const emoji = itemEmojis[item] || '🔮';
+          const emoji = itemEmojis[item] || '❓'; 
           itemElement.textContent = `${emoji} ${item}`;
           backpackItems.appendChild(itemElement);
         });
@@ -578,12 +590,14 @@
       
       // 코디 메시지 추가
       addCodiMessage: function(text, callback) {
-        // 이미 타이핑 중이면 무시
-        if (this.isTyping) return;
+        if (this.isTyping) {
+          return;
+        }
         
         this.isTyping = true;
+        messageInput.disabled = true; 
+        sendBtn.disabled = true; 
         
-        // 타이핑 표시기 추가
         const typingIndicator = document.createElement('div');
         typingIndicator.className = 'typing-indicator';
         typingIndicator.innerHTML = `
@@ -594,12 +608,11 @@
         chatContainer.appendChild(typingIndicator);
         scrollToBottom();
         
-        // 타이핑 효과 시작 전 잠시 대기
         setTimeout(() => {
-          // 타이핑 표시기 제거
-          chatContainer.removeChild(typingIndicator);
+          if (typingIndicator.parentNode === chatContainer) {
+            chatContainer.removeChild(typingIndicator);
+          }
           
-          // 메시지 요소 생성
           const messageElement = document.createElement('div');
           messageElement.className = 'message codi-message';
           
@@ -608,43 +621,60 @@
           senderElement.textContent = '코디 🤖';
           
           const textElement = document.createElement('div');
-          textElement.textContent = '';
+          textElement.innerHTML = ''; 
           
           messageElement.appendChild(senderElement);
           messageElement.appendChild(textElement);
           chatContainer.appendChild(messageElement);
           
-          // 타이핑 효과
           let i = 0;
-          const typingSpeed = 20;
+          const typingSpeed = 20; 
           
           const typeChar = () => {
             if (i < text.length) {
-              textElement.textContent += text.charAt(i);
-              i++;
+              if (text.substring(i).startsWith('<br>')) {
+                textElement.innerHTML += '<br>';
+                i += 4; 
+              } else {
+                textElement.innerHTML += text.charAt(i);
+                i++;
+              }
               scrollToBottom();
               setTimeout(typeChar, typingSpeed);
             } else {
-              // 타이핑 완료
               this.isTyping = false;
+              if (!this.isOptionStage(this.currentStage) && !(callback && this.isCallbackLeadingToOptions(this.currentStage))) {
+                 if(this.currentStage !== 'ending_treasure' && this.currentStage !== 'codi_farewell_soon') { 
+                    messageInput.disabled = false;
+                    sendBtn.disabled = false;
+                 }
+              }
               if (callback) {
-                setTimeout(callback, 300);
+                setTimeout(callback, 300); 
               }
             }
           };
           
           typeChar();
-        }, 500);
+        }, 500); 
+      },
+
+      isOptionStage: function(stageName) {
+        const optionStages = ['intro_confirm_start', 'ending_treasure']; 
+        return optionStages.includes(stageName);
+      },
+
+      isCallbackLeadingToOptions: function(stageName) {
+        return false;
       },
       
-      // 플레이어 메시지 추가
       addPlayerMessage: function(text) {
         const messageElement = document.createElement('div');
         messageElement.className = 'message player-message';
         
         const senderElement = document.createElement('div');
         senderElement.className = 'sender-name';
-        senderElement.textContent = this.playerName || '탐험가';
+        senderElement.textContent = this.playerName || '탐험가 🌟'; 
         
         const textElement = document.createElement('div');
         textElement.textContent = text;
@@ -656,58 +686,45 @@
         scrollToBottom();
       },
       
-      // 선택지 버튼 추가
-      addOptions: function(options, correctOption, nextStage) {
+      addOptions: function(options, correctOption, nextStageOrCallback) {
         const optionsContainer = document.createElement('div');
         optionsContainer.className = 'options-container';
         
-        // 입력창 비활성화
-        messageInput.disabled = true;
+        messageInput.disabled = true; 
         messageInput.placeholder = '선택지를 골라주세요...';
+        sendBtn.disabled = true;
         
-        options.forEach(option => {
+        options.forEach(optionText => { 
           const optionBtn = document.createElement('button');
           optionBtn.className = 'option-btn';
-          optionBtn.setAttribute('aria-label', option);
-          optionBtn.textContent = option;
+          optionBtn.textContent = optionText;
           
           optionBtn.addEventListener('click', () => {
-            // 모든 버튼 비활성화
             document.querySelectorAll('.option-btn').forEach(btn => {
               btn.disabled = true;
               btn.style.opacity = 0.5;
             });
             
-            // 선택한 버튼 강조
             optionBtn.style.opacity = 1;
-            optionBtn.style.backgroundColor = '#C5CAE9';
+            optionBtn.style.backgroundColor = '#C5CAE9'; 
             
-            // 선택 메시지 표시
-            this.addPlayerMessage(option);
+            this.addPlayerMessage(optionText);
             
-            // 선택지 컨테이너 제거
             setTimeout(() => {
-              chatContainer.removeChild(optionsContainer);
+              if (optionsContainer.parentNode === chatContainer) { 
+                  chatContainer.removeChild(optionsContainer);
+              }
               
-              // 입력창 다시 활성화
-              messageInput.disabled = false;
-              messageInput.placeholder = '파이썬 명령어를 입력하세요...';
-              
-              // 정답 여부 확인
-              if (option === correctOption) {
-                // 정답인 경우
-                this.showSuccess();
-                
-                // 명령어 실행 (가방에 아이템 추가/제거)
-                this.executeCommand(option);
-                
-                // 다음 스테이지로 이동
-                setTimeout(() => {
-                  this.goToStage(nextStage);
-                }, 1000);
+              if (optionText === correctOption) {
+                if (typeof nextStageOrCallback === 'string') {
+                  this.showSuccess('좋아! 선택 완료!'); 
+                  setTimeout(() => this.goToStage(nextStageOrCallback), 1000);
+                } else if (typeof nextStageOrCallback === 'function') {
+                   this.showSuccess('좋아! 선택 완료!');
+                   setTimeout(nextStageOrCallback.bind(this, optionText), 1000); // 콜백에 선택된 옵션 전달 및 this 바인딩
+                }
               } else {
-                // 오답인 경우
-                this.showError();
+                this.showDetailedError("음... 그 선택은 아닌 것 같아. 다시 한번 골라볼까?", this.currentStage); 
               }
             }, 500);
           });
@@ -719,367 +736,312 @@
         scrollToBottom();
       },
       
-      // 커스텀 입력 처리 (직접 입력하는 단계용)
-      handleCustomInput: function(input, correctAnswer, nextStage) {
-        if (input === correctAnswer ||
-            (correctAnswer === '내가방.remove' && input.startsWith('내가방.remove')) ||
-            (correctAnswer === '내가방.insert' && input.startsWith('내가방.insert')) ||
-            (correctAnswer === '내가방.pop' && input.startsWith('내가방.pop'))) {
-          // 정답인 경우
-          this.showSuccess();
-          
-          // 명령어 실행
-          this.executeCommand(input);
-          
-          // 다음 스테이지로 이동
-          setTimeout(() => {
-            this.goToStage(nextStage);
-          }, 1000);
+      handleCustomInput: function(input, correctAnswerOrValidator, nextStageOrCallback, failureMessage) {
+        let isValid = false;
+        let validationResult = { success: false };
+
+        if (typeof correctAnswerOrValidator === 'function') {
+            validationResult = correctAnswerOrValidator(input);
+            isValid = validationResult.success;
+        } else if (typeof correctAnswerOrValidator === 'string') {
+            // 공백을 무시하고 비교하여 띄어쓰기 차이를 허용
+            const normalizeString = (str) => str.replace(/\s+/g, '').toLowerCase();
+            if (normalizeString(input) === normalizeString(correctAnswerOrValidator)) {
+                isValid = true;
+            }
+        }
+
+        if (isValid) {
+          const commandSuccessful = this.executeCommand(input); 
+          if (commandSuccessful === false) { 
+            if (failureMessage) {
+                 this.showDetailedError(failureMessage, this.currentStage);
+            } else if (validationResult && validationResult.message) {
+                 this.showDetailedError(validationResult.message, this.currentStage);
+            }
+            return; 
+          }
+          this.showSuccess(); // executeCommand 성공 후 메시지 표시
+
+          if (typeof nextStageOrCallback === 'string') {
+            setTimeout(() => this.goToStage(nextStageOrCallback), 1000);
+          } else if (typeof nextStageOrCallback === 'function') {
+            setTimeout(() => nextStageOrCallback(this.lastPoppedItem), 1000); 
+          }
         } else {
-          // 오답인 경우
-          this.showError();
+          let errMsg = failureMessage || (validationResult && validationResult.message) || "명령어를 다시 한번 확인해줄래? 🧐";
+          this.showDetailedError(errMsg, this.currentStage); 
         }
       },
       
-      // 명령어 실행 (가방 관리)
       executeCommand: function(command) {
-        if (command.includes('내가방.append')) {
-          // append 명령 처리
-          const matches = command.match(/\'(.*?)\'/);
-          if (matches && matches[1]) {
-            const item = matches[1];
-            this.bag.push(item);
-            this.updateBackpack();
-          } else {
-            this.showError('아이템 이름을 찾을 수 없어요.');
-          }
-        } else if (command.includes('내가방.remove')) {
-          // remove 명령 처리
-          const matches = command.match(/\'(.*?)\'/);
-          if (matches && matches[1]) {
-            const item = matches[1];
-            const index = this.bag.indexOf(item);
-            if (index !== -1) {
-              this.bag.splice(index, 1);
-              this.updateBackpack();
+        try {
+            const appendRegex = /^내가방\.append\(\s*['"](.+?)['"]\s*\)$/;
+            const removeRegex = /^내가방\.remove\(\s*['"](.+?)['"]\s*\)$/;
+            const insertRegex = /^내가방\.insert\(\s*(\d+)\s*,\s*['"](.+?)['"]\s*\)$/;
+            const popRegex = /^(?:(\w+)\s*=\s*)?내가방\.pop\(\s*(\d+)\s*\)$/;
+            const lenRegex = /^len\(\s*내가방\s*\)$/;
+
+            let match;
+
+            if ((match = command.match(appendRegex))) {
+                const item = match[1];
+                this.bag.push(item);
+                this.updateBackpack();
+                // this.addCodiMessage(`✅ '${item}'(을)를 가방에 넣었어!`); // 성공 메시지는 handleCustomInput에서 통합
+            } else if ((match = command.match(removeRegex))) {
+                const item = match[1];
+                const itemIndex = this.bag.indexOf(item);
+                if (itemIndex > -1) {
+                    this.bag.splice(itemIndex, 1);
+                    this.updateBackpack();
+                } else {
+                    this.showDetailedError(`⚠️ '${item}'(은)는 가방에 없는 것 같아. 백팩을 확인해볼까?`, this.currentStage);
+                    return false; 
+                }
+            } else if ((match = command.match(insertRegex))) {
+                const index = parseInt(match[1]);
+                const item = match[2];
+                if (index >= 0 && index <= this.bag.length) { 
+                    this.bag.splice(index, 0, item);
+                    this.updateBackpack();
+                    // this.addCodiMessage(`✅ '${item}'(을)를 ${index}번 칸에 넣었어! (현재 가방: ${JSON.stringify(this.bag).replace(/","/g, "', '")})`);
+                } else {
+                    this.showDetailedError(`⚠️ ${index}번 칸은 없는 위치야. 0부터 ${this.bag.length - 1}까지의 숫자만 사용할 수 있어.`, this.currentStage);
+                    return false; 
+                }
+            } else if ((match = command.match(popRegex))) {
+                const variableName = match[1]; // 변수 이름 (예: 선물)
+                const index = parseInt(match[2]); // 인덱스
+
+                if (index >= 0 && index < this.bag.length) {
+                    const poppedItem = this.bag.splice(index, 1)[0];
+                    this.lastPoppedItem = poppedItem; 
+                    this.updateBackpack();
+                    // this.addCodiMessage(`✅ ${index}번 칸에서 '${poppedItem}'(을)를 꺼냈어! ${(variableName ? `'${variableName}' 변수에 '${poppedItem}'(이)가 담겼어!` : '')}`);
+                } else {
+                     if (this.bag.length === 0) {
+                        this.showDetailedError("⚠️ 가방이 비어 있어서 아무것도 꺼낼 수 없어!", this.currentStage);
+                    } else {
+                        this.showDetailedError(`⚠️ ${index}번 칸은 없는 위칸야. 0부터 ${this.bag.length - 1}까지의 숫자만 사용할 수 있어.`, this.currentStage);
+                    }
+                    return false; 
+                }
+            } else if (lenRegex.test(command)) {
+                this.addCodiMessage(`ℹ️ 가방에는 현재 ${this.bag.length}개의 아이템이 있어!`);
             } else {
-              this.showError('해당 아이템이 가방에 없습니다');
+                // 유효성 검사를 통과한 단순 문자열(선택지 등)일 경우, 또는 알 수 없는 명령어.
+                // handleCustomInput에서 이미 오류 처리를 하므로 여기서는 true 반환.
+                return true; 
             }
-          } else {
-            this.showError('아이템 이름을 찾을 수 없어요.');
-          }
-        } else if (command.includes('내가방.insert')) {
-          // insert 명령 처리
-          const matches = command.match(/insert\((\d+),\s*'(.*?)'\)/);
-          if (matches) {
-            const index = parseInt(matches[1], 10);
-            const item = matches[2];
-            if (index >= 0 && index <= this.bag.length) {
-              this.bag.splice(index, 0, item);
-              this.updateBackpack();
-            } else {
-              this.showError('범위를 벗어났어요');
-            }
-          } else {
-            this.showError('insert 명령 형식이 올바르지 않아요');
-          }
-        } else if (command.includes('내가방.pop')) {
-          // pop 명령 처리
-          const matches = command.match(/pop\((\d+)\)/);
-          if (matches) {
-            const index = parseInt(matches[1], 10);
-            if (index >= 0 && index < this.bag.length) {
-              this.poppedItem = this.bag.splice(index, 1)[0];
-              this.updateBackpack();
-            } else {
-              this.showError('범위를 벗어났어요');
-            }
-          } else {
-            this.showError('pop 명령 형식이 올바르지 않아요');
-          }
+            return true; 
+        } catch (error) {
+            console.error("명령어 실행 중 오류:", error);
+            this.showDetailedError("앗! 명령어를 실행하는 중에 문제가 생겼어. 다시 시도해 줄래?", this.currentStage);
+            return false; 
         }
       },
       
-      // 성공 메시지 표시
-      showSuccess: function() {
+      showSuccess: function(message = '✅ 정확해! 잘했어!') { 
         const successElement = document.createElement('div');
         successElement.className = 'success-message';
-        successElement.innerHTML = '✅ 정확해요! 잘했어요!';
+        successElement.innerHTML = message; 
         chatContainer.appendChild(successElement);
         scrollToBottom();
       },
       
-      // 오류 메시지 표시
-      showError: function(message) {
+      showDetailedError: function(errorMessage, stageToRetry) {
         const errorElement = document.createElement('div');
         errorElement.className = 'error-message';
-        const msg = message || '❌ 아쉽게도 틀렸어요! 다시 도전해볼까요?';
-        errorElement.innerHTML = msg;
+        errorElement.innerHTML = `🤷 ${errorMessage}`; 
         chatContainer.appendChild(errorElement);
         scrollToBottom();
-        
-        // 재시작 버튼 추가
-        setTimeout(() => {
-          const restartContainer = document.createElement('div');
-          restartContainer.className = 'options-container';
-          
-          const restartBtn = document.createElement('button');
-          restartBtn.className = 'option-btn';
-          restartBtn.setAttribute('aria-label', '처음부터 다시 시작하기');
-          restartBtn.innerHTML = '🔄 처음부터 다시 시작하기';
-          
-          restartBtn.addEventListener('click', () => {
-            restartContainer.remove();
-            this.reset();
-          });
-          
-          restartContainer.appendChild(restartBtn);
-          chatContainer.appendChild(restartContainer);
-          scrollToBottom();
-          
-          // 입력창 비활성화
-          messageInput.disabled = true;
-          messageInput.placeholder = '다시 시작 버튼을 눌러주세요...';
-          sendBtn.disabled = true;
-        }, 1000);
+
+        messageInput.disabled = false;
+        messageInput.placeholder = '다시 입력해보세요...';
+        sendBtn.disabled = false;
+      },
+
+      showError: function() { 
+        this.showDetailedError('❌ 아쉽게도 틀렸어! 다시 도전해볼까요?', this.currentStage);
       },
       
-      // 게임 스테이지 진행
       goToStage: function(stageName) {
         this.currentStage = stageName;
+        messageInput.disabled = false; 
+        messageInput.placeholder = '파이썬 명령어를 입력하세요...';
+        sendBtn.disabled = false;
         
-        // 스테이지별 처리
         switch(stageName) {
           case 'intro':
-            updateLocation('start', 0);
-            this.addCodiMessage('안녕! 👋 나는 코디야. 파이썬 프로그래밍을 가르쳐 줄 로봇이야. 너의 이름은 뭐니?');
-            break;
-            
-          case 'start':
-            updateLocation('start', 0);
-            this.addCodiMessage(`${this.playerName}아(야), 반가워! 🤩 이 특별한 가방은 '내가방'이라고 불러. 파이썬 명령어로 작동하는 마법 가방이야!`, () => {
-              this.addCodiMessage('내가방 = []', () => {
-                this.addCodiMessage('가방이 비어있어. 이제 신비한 세계로 모험을 떠날 준비가 되었니?', () => {
-                  this.addOptions(
-                    ['네, 모험을 시작할래요! 🚀'], 
-                    '네, 모험을 시작할래요! 🚀',
-                    'forest-1'
-                  );
-                });
-              });
+            updateLocation('start', 0); 
+            this.addCodiMessage('안녕! 👋 다시 만나 반가워! 지난번엔 파이썬 리스트의 기초를 배웠었지.<br>이번엔 "몬스터를 피해 전설의 보물을 찾아라! 💎" 모험을 떠날 거야.<br>시작하기 전에, 네 이름이 뭐였더라? 다시 한번 알려줄래?', () => {
+              messageInput.placeholder = '이름을 입력하세요...';
             });
             break;
             
-          case 'forest-1':
-            updateLocation('forest', 20);
-            this.addCodiMessage('우리는 신비의 숲에 도착했어! 🌲 숲에서는 길을 잃지 않게 여러 물건이 필요해.', () => {
-              this.addCodiMessage('가방에 물건을 넣으려면 어떤 명령어를 사용해야 할까?', () => {
+          case 'intro_confirm_start': 
+            updateLocation('adventure_start', 5); 
+            this.addCodiMessage(`${this.playerName || '탐험가'}아(야), 정말 반가워! 🤩<br>이번 모험에서도 마법 가방 '내가방'을 사용할 거야. <code>내가방 = []</code> 이렇게 비어있는 상태로 시작하자!`, () => {
+              this.bag = []; 
+              this.updateBackpack();
+              this.addCodiMessage('자, 그럼 전설의 보물을 찾으러 출발할 준비 됐니?', () => {
                 this.addOptions(
-                  [
-                    '내가방.append(\'물병\')',
-                    '내가방.add(\'물병\')',
-                    '내가방.put(\'물병\')'
-                  ],
-                  '내가방.append(\'물병\')',
-                  'forest-2'
+                  ['네, 준비됐어요! 보물을 찾으러 가요! 🚀'], 
+                  '네, 준비됐어요! 보물을 찾으러 가요! 🚀',
+                  'stage1_forest_intro'
                 );
               });
             });
             break;
             
-          case 'forest-2':
-            this.addCodiMessage('잘했어! 💧 물병이 가방에 들어갔어.', () => {
-              this.addCodiMessage('이제 지도도 필요할 것 같아. 지도를 가방에 넣어보자!', () => {
-                this.addOptions(
-                  [
-                    '내가방.append(\'지도\')',
-                    '내가방.add(\'지도\')',
-                    '내가방.put(\'지도\')'
-                  ],
-                  '내가방.append(\'지도\')',
-                  'forest-3'
-                );
+          case 'stage1_forest_intro':
+            updateLocation('forest', 10); 
+            this.addCodiMessage('좋아! 우리는 "속삭이는 숲"에 도착했어. 🌲<br>이곳을 안전하게 지나가려면 아이템이 필요해.', () => {
+              this.addCodiMessage("'등불'로 길을 밝히고, '열매'로 허기를 달래야 해.<br>먼저 '등불'을 가방에 넣어볼까?<br>(힌트: <code>내가방.append(\'아이템이름\')</code> 기억나지? 'a'로 시작해!)", () => {
+                messageInput.placeholder = "append 명령어를 사용해보세요...";
               });
             });
             break;
-            
-          case 'forest-3':
-            this.addCodiMessage('좋아! 🗺️ 지도도 넣었어. 이제 손전등도 필요해. 넣어볼까?', () => {
-              this.addOptions(
-                [
-                  '내가방.append(\'손전등\')',
-                  '내가방.appand(\'손전등\')',
-                  '내가방.apppend(\'손전등\')'
-                ],
-                '내가방.append(\'손전등\')',
-                'forest-wolf'
-              );
+
+          case 'stage1_forest_append_berry':
+            this.addCodiMessage("💡 '등불'이 가방에 쏙! (백팩 UI 확인!)<br>로블록스 게임에서 인벤토리에 아이템 넣는 거랑 똑같지? 😉", () => {
+              this.addCodiMessage("이제 '열매'도 가방에 넣어보자! 같은 방법이야.", () => {
+                messageInput.placeholder = "append 명령어로 열매를 추가하세요...";
+              });
             });
             break;
-            
-          case 'forest-wolf':
-            this.addCodiMessage('앗! 🐺 늑대가 나타났어! 빨리 도망가야 해!', () => {
-              this.addCodiMessage('하지만 가방이 너무 무거워... 손전등을 꺼내야 할 것 같아!', () => {
-                this.addCodiMessage('가방에서 물건을 빼려면 어떤 명령어를 사용해야 할까?', () => {
-                  this.addOptions(
-                    [
-                      '내가방.remove(\'손전등\')',
-                      '내가방.delete(\'손전등\')',
-                      '내가방.take(\'손전등\')'
-                    ],
-                    '내가방.remove(\'손전등\')',
-                    'sea-1'
-                  );
+
+          case 'stage1_forest_len':
+            this.addCodiMessage("🍓 '열매'도 성공적으로 추가! 가방이 든든해졌는걸?<br>지금 가방에 아이템이 총 몇 개 있는지 확인해볼까?", () => {
+              this.addCodiMessage("(힌트: 전체 개수는 'l'로 시작하는 짧은 명령어! <code>len(내가방)</code> 기억나지?)", () => {
+                messageInput.placeholder = "len 명령어를 입력하세요...";
+              });
+            });
+            break;
+
+          case 'stage2_cave_intro':
+            updateLocation('cave_bridge', 30); 
+            this.addCodiMessage(`맞아! 가방에는 총 ${this.bag.length}개의 아이템이 있어!<br><code>len()</code> 명령어는 나중에 로블록스에서 친구 목록 수나 스킬 개수 셀 때도 유용할 거야!`, () => {
+              this.addCodiMessage("으악! 😱 저 앞에 '흔들리는 동굴 다리'가 나타났어!<br>다리가 너무 낡아서, 가방에서 가장 무거워 보이는 '등불'을 잠시 내려놓고 가야겠어.", () => {
+                this.addCodiMessage("가방에서 아이템을 없앨 때는 어떤 명령어를 썼더라?<br>(힌트: 'r'로 시작해! <code>내가방.remove(\'아이템이름\')</code> 형식이야!)", () => {
+                  messageInput.placeholder = "remove 명령어를 사용해보세요...";
                 });
               });
             });
             break;
-            
-          case 'sea-1':
-            updateLocation('sea', 40);
-            this.addCodiMessage('휴, 무사히 늑대를 피했어! 🏃‍♂️ 이제 우리는 신비의 바다에 도착했어.', () => {
-              this.addCodiMessage('바다에서는 새로운 물건들이 필요해. 먼저 가방에 물건이 몇 개 있는지 확인해볼까?', () => {
-                this.addOptions(
-                  [
-                    '개수 = len(내가방)',
-                    '개수 = count(내가방)'
-                  ],
-                  '개수 = len(내가방)',
-                  'sea-2'
-                );
+          
+          case 'stage2_cave_after_remove':
+            this.addCodiMessage("휴, 다행이다! 💡 '등불'을 내려놓으니 가방이 가벼워져서 안전하게 건넜어!", () => {
+              this.addCodiMessage("지금 가방엔 뭐가 남았는지 <code>len(내가방)</code>으로 다시 확인해볼까?", () => {
+                messageInput.placeholder = "len 명령어로 개수를 확인하세요...";
               });
             });
             break;
-            
-          case 'sea-2':
-            this.addCodiMessage(`가방에는 ${this.bag.length}개의 물건이 있어! 📊`, () => {
-              this.addCodiMessage('이제 수영복을 가방에 넣어보자. 명령어는 기억나니?', () => {
-                this.addCodiMessage('힌트 : 내가방.a??e??(\'수영복\')');
-                // 직접 입력 모드로 설정
-                messageInput.placeholder = '파이썬 명령어를 입력하세요...';
-              });
-            });
-            break;
-            
-          case 'sea-monster':
-            this.addCodiMessage('수영복을 넣었어! 🩱 좋아, 이제 바다를 탐험할 준비가 됐어!', () => {
-              this.addCodiMessage('앗! 🦑 바다 괴물이 나타났어! 괴물이 우리에게 뭔가를 원하는 것 같아...', () => {
-                this.addCodiMessage('괴물이 지도를 찾고 있어! 지도를 괴물에게 주려면 가방에서 빼야 해!', () => {
-                  this.addCodiMessage('힌트: 내가방.rem?ve(\'지도\')를 사용해 지도를 빼보자!');
-                  // 직접 입력 모드로 설정
-                  messageInput.placeholder = '파이썬 명령어를 입력하세요...';
-                });
-              });
-            });
-            break;
-            
-          case 'desert-1':
-            updateLocation('desert', 60);
-            this.addCodiMessage('괴물에게 지도를 주고 무사히 지나왔어! 👏 이제 우리는 신비의 사막에 도착했어.', () => {
-              this.addCodiMessage('사막에서는 물이 정말 중요해. 가방에 물을 넣어보자!', () => {
-                this.addCodiMessage('이제는 힌트 없이 직접 명령어를 입력해봐. 가방에 물을 추가하는 명령어를 입력해줘!');
-                // 직접 입력 모드로 설정
-                messageInput.placeholder = '파이썬 명령어를 입력하세요...';
-              });
-            });
-            break;
-            
-          case 'desert-2':
-            this.addCodiMessage('잘했어! 💦 물을 가방에 넣었어. 사막은 낮에는 뜨겁고 밤에는 추워.', () => {
-              this.addCodiMessage('이제 모자도 필요할 것 같아. 모자를 가방에 추가해보자!');
-              // 직접 입력 모드로 설정
-              messageInput.placeholder = '파이썬 명령어를 입력하세요...';
-            });
-            break;
-            
-          case 'desert-3':
-            this.addCodiMessage('좋아! 👒 모자도 넣었어.', () => {
-              this.addCodiMessage('이제 선크림도 필요해. 선크림을 가방에 추가해보자!');
-              // 직접 입력 모드로 설정
-              messageInput.placeholder = '파이썬 명령어를 입력하세요...';
-            });
-            break;
-            
-          case 'desert-storm':
-            this.addCodiMessage('앗! 🌪️ 모래폭풍이 다가오고 있어! 가방이 너무 무거워서 피하기 어려워!', () => {
-              this.addCodiMessage("가장 무거운 '선크림'을 빼자!", () => {
-                this.addCodiMessage(`현재 내가방: ${JSON.stringify(this.bag)}`, () => {
-                  this.addCodiMessage('선크림을 빼는 명령어를 입력해봐.');
-                  // 직접 입력 모드로 설정
-                  messageInput.placeholder = '파이썬 명령어를 입력하세요...';
+
+          case 'stage3_altar_intro':
+            updateLocation('altar', 50); 
+            if (!this.bag.includes('물의 수정')) this.bag.push('물의 수정');
+            if (!this.bag.includes('바람의 수정')) this.bag.push('바람의 수정');
+            this.updateBackpack();
+
+            this.addCodiMessage(`좋아, 가방엔 이제 ${this.bag.length}개의 아이템만 남았네!<br>우리는 '비밀의 제단'에 도착했어. 🏛️`, () => {
+              this.addCodiMessage("제단에는 3개의 홈이 파여 있고, 순서대로 '물의 수정', '불의 수정', '바람의 수정'을 끼워야 문이 열린대.<br>우리 가방을 볼까? (현재 내가방: [" + this.bag.map(item => `'${item}'`).join(", ") + "])", () => {
+                this.addCodiMessage("이런! '불의 수정'이 없네! 저기 반짝이는 게 '불의 수정'인 것 같아! 어서 주워오자!<br><code>내가방.append(\'불의 수정\')</code>을 입력해서 '불의 수정'을 가방에 넣어줘.", () => {
+                  messageInput.placeholder = "append 명령어로 불의 수정을 추가하세요...";
                 });
               });
             });
             break;
 
-          case 'altar-append':
-            updateLocation('altar', 70);
-            this.addCodiMessage('모래폭풍을 피하고 비밀의 제단에 도착했어.', () => {
-              this.addCodiMessage('저기 반짝이는 \'불의 수정\'을 발견했어! 가방에 넣어볼까?', () => {
-                this.addOptions(
-                  [
-                    "내가방.append('불의 수정')",
-                    "내가방.add('불의 수정')"
-                  ],
-                  "내가방.append('불의 수정')",
-                  'altar-insert'
-                );
-              });
-            });
-            break;
-
-          case 'altar-insert':
-            this.addCodiMessage(`현재 내가방: ${JSON.stringify(this.bag)}`, () => {
-              this.addCodiMessage('방금 넣은 불의 수정은 두 번째 칸에 있어야 해.', () => {
-                this.addCodiMessage('불의 수정을 두 번째 위치에 넣어보자.', () => {
-                  messageInput.placeholder = '파이썬 명령어를 입력하세요...';
-                });
-              });
-            });
-            break;
-
-          case 'monster-test':
-            updateLocation('monster', 75);
-            this.addCodiMessage('제단을 지나니 몬스터가 길을 막고 있어!', () => {
-              this.addCodiMessage('몬스터가 가방의 첫 번째 아이템을 달라고 해.', () => {
-                this.addCodiMessage('첫 번째 아이템을 꺼내 주려면 어떤 명령을 써야 할까?', () => {
-                  messageInput.placeholder = '파이썬 명령어를 입력하세요...';
+          case 'stage3_altar_check_order':
+            this.addCodiMessage("🔥 '불의 수정'을 가방에 넣었어! (현재 내가방: [" + this.bag.map(item => `'${item}'`).join(", ") + "])", () => {
+              this.addCodiMessage("그런데 순서가 안 맞네.<br>'물의 수정' 다음, 즉 두 번째에는 '불의 수정'이 들어가야 하는데, 지금은 맨 뒤에 있어.<br>파이썬에서 리스트의 칸 번호는 0번부터 시작해. 그래서 '물의 수정'은 0번 칸, 그 다음이 1번 칸, 마지막이 2번 칸이야.", () => {
+                this.addCodiMessage("먼저 맨 뒤에 있는 '불의 수정'을 <code>내가방.pop(2)</code>로 빼볼까? (가장 뒤에 있으니 2번 칸이야)<br>그 다음에 <code>내가방.insert(1, '불의 수정')</code>으로 1번 칸에 넣어주면 완벽해!", () => {
+                   this.addCodiMessage("자, 먼저 <code>내가방.pop(2)</code>를 입력해서 '불의 수정'을 잠시 꺼내보자!", () => {
+                     messageInput.placeholder = "pop 명령어를 사용해보세요...";
+                   });
                 });
               });
             });
             break;
             
-          case 'mountain-1':
-            updateLocation('mountain', 80);
-            this.addCodiMessage(`몬스터에게 '${this.poppedItem}'을(를) 건네주고 무사히 지나왔어!`, () => {
-              this.addCodiMessage('산을 오르기 전에 우리 가방에 몇 개의 물건이 있는지 확인해보자. 명령어를 입력해봐!');
-              messageInput.placeholder = '파이썬 명령어를 입력하세요...';
+          case 'stage3_altar_after_pop':
+            this.addCodiMessage("좋아! '불의 수정'을 가방에서 잠시 꺼냈어. (현재 내가방: [" + this.bag.map(item => `'${item}'`).join(", ") + "])", () => {
+                this.addCodiMessage("이제 특별한 끼워넣기 마법을 배워보자! 🪄<br>마치 친구들 사이에 끼어들 듯이, 아이템을 원하는 자리에 쏙 넣을 수 있어!<br><br>지금 가방엔 [0번: 물의 수정, 1번: 바람의 수정]이 있지?<br>'불의 수정'을 1번 자리에 넣으면, '바람의 수정'은 뒤로 밀려나게 돼!<br><br>명령어: <code>내가방.insert(1, '불의 수정')</code><br>이렇게 하면 → [0번: 물의 수정, 1번: 불의 수정, 2번: 바람의 수정]", () => {
+                    messageInput.placeholder = "insert 명령어를 사용해보세요...";
+                });
             });
             break;
-            
-          case 'mountain-2':
-            this.addCodiMessage(`가방에는 ${this.bag.length}개의 물건이 있어! 🔢`, () => {
-              this.addCodiMessage('산을 오르려면 로프가 필요해. 로프를 가방에 추가해보자!');
-              // 직접 입력 모드로 설정
-              messageInput.placeholder = '파이썬 명령어를 입력하세요...';
+
+          case 'stage3_altar_success':
+            updateLocation('altar_gate_open', 70); 
+            this.addCodiMessage("완벽해! 💎 순서가 딱 맞았어! (현재 내가방: [" + this.bag.map(item => `'${item}'`).join(", ") + "])<br>비밀의 문이 스르륵 열린다!", () => {
+              this.addCodiMessage("이 <code>insert</code> 마법은 로블록스에서 아이템 목록의 순서를 바꾸거나, 채팅 메시지를 중간에 끼워넣을 때 정말 유용해!", () => {
+                  this.goToStage('stage4_monster_intro');
+              });
             });
             break;
-            
-          case 'final':
-            updateLocation('end', 100);
-            this.addCodiMessage('축하해! 🎉 우리는 모든 여행을 마치고 집으로 돌아왔어!', () => {
-              this.addCodiMessage(`${this.playerName}아(야), 정말 대단했어! 이제 너는 파이썬 리스트를 사용하는 방법을 알게 됐어!`, () => {
-                this.addCodiMessage('내가방에 append로 물건 넣기, remove로 물건 빼기, len으로 개수 확인하는 방법을 모두 배웠지!', () => {
-                  this.addCodiMessage('이런 파이썬 명령어들은 실제 프로그래밍에서도 똑같이 사용할 수 있어. 정말 멋진 모험이었어! 👏', () => {
-                    this.addOptions(
-                      ['다시 시작하기 🔄'],
-                      '다시 시작하기 🔄',
-                      'restart'
-                    );
+
+          case 'stage4_monster_intro':
+            updateLocation('monster_lair', 75); 
+            this.addCodiMessage("문 너머에는 보물 창고가 있지만... 👾 이런! 길을 막고 있는 몬스터가 나타났어!<br>다행히 나쁜 몬스터는 아닌 것 같아.", () => {
+              this.addCodiMessage("몬스터가 말하길, '네 가방의 첫 번째 아이템을 나에게 선물로 주면 길을 비켜주겠다!' 라고 하네.<br>첫 번째 아이템은 0번 칸에 있는 아이템이야.", () => {
+                this.addCodiMessage("이번엔 <code>pop</code>이라는 마법을 써보자!<br><code>꺼낸아이템 = 내가방.pop(위치번호)</code> 이렇게 사용하면 특정 위치의 아이템을 꺼내면서, 그 아이템을 '꺼낸아이템'이라는 곳에 잠시 보관할 수 있어. 가방에서는 그 아이템이 사라지고!", () => {
+                  this.addCodiMessage("자, <code>선물 = 내가방.pop(0)</code> 또는 간단히 <code>내가방.pop(0)</code>을 입력해서 첫 번째 아이템을 꺼내 몬스터에게 줄 준비를 하자!", () => {
+                    messageInput.placeholder = "pop 명령어로 첫 번째 아이템을 꺼내세요...";
                   });
                 });
               });
             });
+            break;
+
+          case 'stage4_monster_gift':
+            if (this.lastPoppedItem) {
+                const giftEmoji = itemEmojis[this.lastPoppedItem] || '❓';
+                this.addCodiMessage(`좋아! ${giftEmoji} '${this.lastPoppedItem}'(을)를 꺼냈어. 이제 이 선물을 몬스터에게 건네주자!`, () => {
+                    this.addCodiMessage("몬스터가 선물을 받고는 아주 기뻐하며 길을 비켜줬어! 🥳<br><code>pop</code> 마법 덕분이야! 이 마법은 게임에서 아이템을 사용하면 인벤토리에서 사라지게 할 때 쓸 수 있겠지?", () => {
+                        this.goToStage('ending_treasure');
+                    });
+                });
+            } else {
+                this.addCodiMessage("어라? 몬스터에게 줄 아이템이 준비되지 않은 것 같아. 이전 단계로 돌아가서 다시 해볼까?", () => {
+                    this.goToStage('stage4_monster_intro'); 
+                });
+            }
+            updateLocation('monster_cleared', 90); 
+            break;
+            
+          case 'ending_treasure':
+            updateLocation('treasure_room', 100); 
+            this.addCodiMessage(`드디어 전설의 보물을 찾았어, ${this.playerName || '예린'} 탐험가! 🏆✨ 정말 대단해!`, () => {
+              this.addCodiMessage("너는 이제 파이썬 리스트 마법을 자유자재로 사용하는 멋진 모험가가 되었어!", () => {
+                this.addCodiMessage("<code>append</code>로 아이템 추가하기, <code>remove</code>로 아이템 없애기, <code>len</code>으로 개수 확인하기, <code>insert</code>로 원하는 곳에 끼워넣기, <code>pop</code>으로 특정 아이템 꺼내기까지! 모두 완벽하게 익혔는걸!", () => {
+                  this.addCodiMessage("이 모든 건 로블록스 게임을 만들 때 캐릭터의 능력치, 친구 목록, 인벤토리 아이템들을 관리하는 데 아주 유용하게 쓰일 수 있는 기술들이야.<br>앞으로 네가 만들 멋진 게임들이 기대되는걸! 😉", () => {
+                    this.addOptions(
+                      ['다시 모험하기 🔄', '다른 마법 배우러 가기 (준비중) 🚧'],
+                      '다시 모험하기 🔄', 
+                      (selectedOption) => { 
+                        if (selectedOption === '다시 모험하기 🔄') {
+                          this.goToStage('restart');
+                        } else {
+                          this.goToStage('codi_farewell_soon');
+                        }
+                      }
+                    );
+                    messageInput.disabled = true; 
+                    sendBtn.disabled = true;
+                  });
+                });
+              });
+            });
+            break;
+
+          case 'codi_farewell_soon':
+            this.addCodiMessage("좋아! 다음 모험도 곧 준비될 거야. 그때 다시 만나자! 👋");
+            messageInput.disabled = true;
+            messageInput.placeholder = '다음에 또 만나요!';
+            sendBtn.disabled = true;
             break;
             
           case 'restart':
@@ -1088,150 +1050,162 @@
         }
       },
       
-      // 게임 초기화
       reset: function() {
-        this.playerName = '';
+        this.playerName = ''; 
         this.bag = [];
-        this.poppedItem = '';
+        this.lastPoppedItem = null;
         
-        chatContainer.innerHTML = '';
+        chatContainer.innerHTML = ''; 
         messageInput.disabled = false;
         messageInput.placeholder = '메시지를 입력하세요...';
         sendBtn.disabled = false;
         
         this.updateBackpack();
-        this.goToStage('intro');
+        this.goToStage('intro'); 
       },
       
-      // 메시지 입력 처리
       handleInput: function(input) {
         if (!input.trim()) return;
         
-        // 입력 타입에 따른 처리
-        if (this.currentStage === 'intro') {
+        this.addPlayerMessage(input); 
+        messageInput.value = ''; 
+
+        const currentStage = this.currentStage; 
+
+        if (currentStage === 'intro') {
           this.playerName = input;
-          this.addPlayerMessage(input);
-          this.goToStage('start');
-        } else if (this.currentStage === 'sea-2') {
-          this.addPlayerMessage(input);
-          this.handleCustomInput(input, '내가방.append(\'수영복\')', 'sea-monster');
-        } else if (this.currentStage === 'sea-monster') {
-          this.addPlayerMessage(input);
-          this.handleCustomInput(input, '내가방.remove(\'지도\')', 'desert-1');
-        } else if (this.currentStage === 'desert-1') {
-          this.addPlayerMessage(input);
-          this.handleCustomInput(input, '내가방.append(\'물\')', 'desert-2');
-        } else if (this.currentStage === 'desert-2') {
-          this.addPlayerMessage(input);
-          this.handleCustomInput(input, '내가방.append(\'모자\')', 'desert-3');
-        } else if (this.currentStage === 'desert-3') {
-          this.addPlayerMessage(input);
-          this.handleCustomInput(input, '내가방.append(\'선크림\')', 'desert-storm');
-        } else if (this.currentStage === 'desert-storm') {
-          this.addPlayerMessage(input);
-          this.handleCustomInput(input, '내가방.remove', 'altar-append');
-        } else if (this.currentStage === 'altar-insert') {
-          this.addPlayerMessage(input);
-          this.handleCustomInput(input, '내가방.insert', 'monster-test');
-        } else if (this.currentStage === 'monster-test') {
-          this.addPlayerMessage(input);
-          this.handleCustomInput(input, '내가방.pop', 'mountain-1');
-        } else if (this.currentStage === 'mountain-1') {
-          this.addPlayerMessage(input);
-          this.handleCustomInput(input, 'len(내가방)', 'mountain-2');
-        } else if (this.currentStage === 'mountain-2') {
-          this.addPlayerMessage(input);
-          this.handleCustomInput(input, '내가방.append(\'로프\')', 'final');
+          this.goToStage('intro_confirm_start');
+        } else if (currentStage === 'stage1_forest_intro') {
+          this.handleCustomInput(input, "내가방.append('등불')", 'stage1_forest_append_berry', "앗! '등불'을 추가하는 정확한 명령어는 <code>내가방.append(\'등불\')</code>이야. 따옴표와 괄호를 잘 확인해봐! 😉");
+        } else if (currentStage === 'stage1_forest_append_berry') {
+          this.handleCustomInput(input, "내가방.append('열매')", 'stage1_forest_len', "좋아, '열매'를 추가하는 주문은 <code>내가방.append(\'열매\')</code>야. 거의 다 왔어!");
+        } else if (currentStage === 'stage1_forest_len') {
+          this.handleCustomInput(input, "len(내가방)", () => { 
+            this.goToStage('stage2_cave_intro');
+          }, "<code>len(내가방)</code>이 정확한 주문이야! 괄호 안에 '내가방'을 넣는 것 잊지 않았지?");
+        } else if (currentStage === 'stage2_cave_intro') {
+          this.handleCustomInput(input, "내가방.remove('등불')", 'stage2_cave_after_remove', "'등불'을 없애려면 <code>내가방.remove(\'등불\')</code>이라고 외쳐야 해. 가방에 해당 아이템이 있는지도 확인해봐! 🎒");
+        } else if (currentStage === 'stage2_cave_after_remove') {
+           this.handleCustomInput(input, "len(내가방)", () => {
+            this.goToStage('stage3_altar_intro');
+          }, "가방 안의 아이템 개수는 <code>len(내가방)</code>으로 확인할 수 있어!");
+        } else if (currentStage === 'stage3_altar_intro') {
+            this.handleCustomInput(input, "내가방.append('불의 수정')", 'stage3_altar_check_order', "<code>내가방.append(\'불의 수정\')</code>을 입력해서 불의 수정을 가방에 넣어줘!");
+        } else if (currentStage === 'stage3_altar_check_order') {
+            this.handleCustomInput(input, "내가방.pop(2)", 'stage3_altar_after_pop', "'불의 수정'을 제거하는 명령어를 입력해줘! <code>내가방.pop(2)</code>를 사용해야 해.");
+        } else if (currentStage === 'stage3_altar_after_pop') {
+            this.handleCustomInput(input, "내가방.insert(1, '불의 수정')", 'stage3_altar_success', "<code>내가방.insert(1, \'불의 수정\')</code>이 정확한 주문이야! 위치 숫자 1과 '불의 수정'을 쉼표로 구분하고, 아이템 이름엔 따옴표! 😉");
+        } else if (currentStage === 'stage4_monster_intro') {
+            this.handleCustomInput(input, (cmd) => { 
+                const popRegex = /^(?:(\w+)\s*=\s*)?내가방\.pop\(\s*0\s*\)$/;
+                if (popRegex.test(cmd)) { 
+                    if (this.bag.length > 0 && this.bag[0]) { 
+                        return { success: true };
+                    } else {
+                        return { success: false, message: "⚠️ 가방이 비어있거나 첫 번째 아이템이 없어! 몬스터에게 줄 게 없네..." };
+                    }
+                }
+                return { success: false, message: "몬스터에게 첫 번째 아이템을 주려면 <code>내가방.pop(0)</code> 또는 <code>선물 = 내가방.pop(0)</code>을 입력해야 해. 0번 칸을 정확히 지정했는지 확인해봐! 🤓" };
+            }, 'stage4_monster_gift');
         }
       }
     };
 
-    // 위치별 배경 및 아이콘
     const locations = {
-      start: {
-        bg: 'linear-gradient(to bottom, #E3E4E5 0%, #D4CECE 100%)',
-        title: '👋 파이썬 탐험대의 신비한 여행',
-        character: '🤖'
+      start: { 
+        bg: 'linear-gradient(to bottom, #a0c4ff 0%, #c1d8ff 100%)', 
+        title: '💎 보물찾기 모험 시작!',
+        character: '🗺️' 
+      },
+      adventure_start: { 
+        bg: 'linear-gradient(to bottom, #b3e0ff 0%, #d1eeff 100%)', 
+        title: '✨ 새로운 모험 준비!',
+        character: '🧑‍🚀' 
       },
       forest: {
-        bg: 'linear-gradient(to bottom, #A8E6CF 0%, #7FDD9E 100%)',
-        title: '🌲 신비의 숲',
-        character: '🦝'
+        bg: 'linear-gradient(to bottom, #90ee90 0%, #c3f3c3 100%)', 
+        title: '🌲 속삭이는 숲',
+        character: '🦋' 
       },
-      sea: {
-        bg: 'linear-gradient(to bottom, #87CEEB 0%, #4682B4 100%)',
-        title: '🌊 신비의 바다',
-        character: '🐠'
-      },
-      desert: {
-        bg: 'linear-gradient(to bottom, #FFE5B4 0%, #FFA500 100%)',
-        title: '🏜️ 신비의 사막',
-        character: '🐪'
+      cave_bridge: {
+        bg: 'linear-gradient(to bottom, #bcaaa4 0%, #d7ccc8 100%)', 
+        title: '🌉 흔들리는 동굴 다리',
+        character: '😨' 
       },
       altar: {
-        bg: 'linear-gradient(to bottom, #B0E0E6 0%, #ADD8E6 100%)',
-        title: '⛩️ 비밀의 제단',
-        character: '🗿'
+        bg: 'linear-gradient(to bottom, #fff59d 0%, #fff9c4 100%)', 
+        title: '🏛️ 비밀의 제단',
+        character: '💎' 
       },
-      monster: {
-        bg: 'linear-gradient(to bottom, #A9A9A9 0%, #696969 100%)',
+      altar_gate_open: { 
+        bg: 'linear-gradient(to bottom, #ffe082 0%, #fff1b8 100%)',
+        title: '🌟 문이 열렸다!',
+        character: '✨'
+      },
+      monster_lair: {
+        bg: 'linear-gradient(to bottom, #ffab91 0%, #ffccbc 100%)', 
         title: '👾 몬스터의 시험',
-        character: '👹'
+        character: '👹' 
       },
-      mountain: {
-        bg: 'linear-gradient(to bottom, #E0E0E0 0%, #999999 100%)',
-        title: '⛰️ 신비의 산',
-        character: '🦅'
+      monster_cleared: { 
+        bg: 'linear-gradient(to bottom, #c5e1a5 0%, #e6ee9c 100%)',
+        title: '😅 휴, 지나갔다!',
+        character: '🥳'
       },
-      end: {
-        bg: 'linear-gradient(to bottom, #DDA0DD 0%, #9370DB 100%)',
-        title: '🏆 모험 완료!',
+      treasure_room: { 
+        bg: 'linear-gradient(to bottom, #ffd700 0%, #fffacd 100%)', 
+        title: '🏆 전설의 보물 발견!',
         character: '🎉'
       }
     };
 
-    // 아이템 이모지 매핑
     const itemEmojis = {
-      '물병': '💧',
+      '등불': '💡',
+      '열매': '🍓',
+      '물의 수정': '💧',
+      '불의 수정': '🔥',
+      '바람의 수정': '🌬️',
+      '물병': '🍼', 
       '지도': '🗺️',
       '손전등': '🔦',
       '수영복': '🩱',
       '물': '💦',
       '모자': '👒',
       '선크림': '🧴',
-      '로프': '🧵',
-      '물의 수정': '💧',
-      '불의 수정': '🔥',
-      '바람의 수정': '💨'
+      '로프': '🧵'
     };
 
-    // 위치 업데이트
     function updateLocation(locationKey, progress) {
       const location = locations[locationKey];
-      locationBg.style.background = location.bg;
-      locationTitle.textContent = location.title;
-      locationCharacter.textContent = location.character;
-      progressBar.style.width = `${progress}%`;
+      if (location) { 
+        locationBg.style.background = location.bg;
+        locationTitle.textContent = location.title;
+        locationCharacter.textContent = location.character;
+        progressBar.style.width = `${progress}%`;
+      } else {
+        console.warn(`Location key "${locationKey}" not found in locations object.`);
+        locationBg.style.background = 'linear-gradient(to bottom, #cccccc 0%, #999999 100%)';
+        locationTitle.textContent = '알 수 없는 장소';
+        locationCharacter.textContent = '❓';
+      }
     }
 
-    // 스크롤을 항상 아래로
     function scrollToBottom() {
       setTimeout(() => {
         chatContainer.scrollTop = chatContainer.scrollHeight;
-      }, 10);
+      }, 10); 
     }
 
-    // 백팩 토글
     function toggleBackpack() {
       backpackContainer.classList.toggle('show');
-      game.updateBackpack();
+      if (backpackContainer.classList.contains('show')) {
+        game.updateBackpack();
+      }
     }
 
-    // 이벤트 리스너
     sendBtn.addEventListener('click', () => {
       if (!messageInput.disabled && messageInput.value.trim()) {
         const input = messageInput.value.trim();
-        messageInput.value = '';
         game.handleInput(input);
       }
     });
@@ -1239,14 +1213,12 @@
     messageInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter' && !messageInput.disabled && messageInput.value.trim()) {
         const input = messageInput.value.trim();
-        messageInput.value = '';
         game.handleInput(input);
       }
     });
 
     backpackBtn.addEventListener('click', toggleBackpack);
 
-    // 게임 시작
     game.goToStage('intro');
   </script>
 </body>
