@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>파이썬 탐험대의 신비한 여행 🚀</title>
+  <style>
+    /* 기본 스타일 */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Noto Sans KR', sans-serif;
+    }
+
+    body {
+      background-color: #f5f7fa;
+      font-size: 16px;
+      line-height: 1.6;
+      color: #333;
+      overflow: hidden;
+      height: 100%;
+      min-height: 100dvh;
+      min-height: -webkit-fill-available;
+      position: relative;
+    }
+    
+    html {
+      height: 100%;
+      min-height: 100dvh;
+      min-height: -webkit-fill-available;
+    }
+
+    /* 동적 뷰포트 높이 설정 */
+    :root {
+      height: 100dvh;
+      height: -webkit-fill-available;
+    }
+    
+    /* CSS 변수로 뷰포트 높이 관리 */
+    :root {
+      --vh: 1vh;
+    }
+    
+    /* 메인 컨테이너 */
+    .container {
+      display: flex;
+      flex-direction: column;
+      height: calc(var(--vh, 1vh) * 100);
+      min-height: 100dvh;
+      min-height: -webkit-fill-available;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* 위치 배경 */
+    .location-bg {
+      width: 100%;
+      height: 180px;
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      position: relative;
+      transition: all 1s ease;
+      border-bottom: 5px solid #64B5F6;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    /* 캐릭터 스타일 */
+    .character {
+      font-size: 4rem;
+      animation: bounce 2s infinite;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+      z-index: 5;
+    }
+    
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    /* 위치 타이틀 */
+    .location-title {
+      position: absolute;
+      bottom: 20px;
+      left: 20px;
+      background-color: rgba(0, 0, 0, 0.6);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 30px;
+      font-weight: bold;
+      font-size: 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* 채팅 영역 */
+    .chat-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      padding-bottom: 85px; /* 입력창 높이 + 여유 공간 */
+      background-color: white;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    /* 메시지 스타일 */
+    .message {
+      max-width: 80%;
+      padding: 12px 16px;
+      border-radius: 18px;
+      margin-bottom: 4px;
+      position: relative;
+      word-break: break-word;
+      animation: fadeIn 0.3s forwards;
+    }
+
+    /* 메시지 페이드인 애니메이션 */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 코디 메시지 */
+    .codi-message {
+      align-self: flex-start;
+      background-color: #E3F2FD;
+      border-bottom-left-radius: 5px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 플레이어 메시지 */
+    .player-message {
+      align-self: flex-end;
+      background-color: #E8F5E9;
+      border-bottom-right-radius: 5px;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+
+    /* 보낸 사람 이름 */
+    .sender-name {
+      font-weight: bold;
+      margin-bottom: 4px;
+      font-size: 0.9rem;
+    }
+
+    /* 입력 영역 */
+    .input-container {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 12px;
+      padding-bottom: calc(12px + env(safe-area-inset-bottom, 45px));
+      background-color: white;
+      border-top: 1px solid #e1e4e8;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      z-index: 1000;
+      /* 브라우저 바 높이 고려 */
+      bottom: calc(0px + (100vh - 100%));
+      /* 구버전 iOS 지원 */
+      padding-bottom: calc(12px + constant(safe-area-inset-bottom, 45px));
+      padding-bottom: calc(12px + env(safe-area-inset-bottom, 45px));
+    }
+
+    /* 입력창 */
+    .message-input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 2px solid #e1e4e8;
+      border-radius: 24px;
+      font-size: 1rem;
+      outline: none;
+      transition: border-color 0.3s;
+    }
+
+    .message-input:focus {
+      border-color: #64B5F6;
+    }
+
+    .message-input:disabled {
+      background-color: #f5f7fa;
+      cursor: not-allowed;
+    }
+
+    /* 버튼 공통 스타일 */
+    .btn {
+      border: none;
+      background-color: #2196F3;
+      color: white;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 1.2rem;
+      transition: background-color 0.3s, transform 0.2s;
+      outline: none;
+    }
+    
+    /* 모바일에서 제출 버튼 숨기기 */
+    @media (max-width: 768px) {
+      #sendBtn {
+        display: none;
+      }
+    }
+
+    .btn:hover {
+      background-color: #1976D2;
+      transform: scale(1.05);
+    }
+
+    .btn:active {
+      transform: scale(0.95);
+    }
+
+    .btn:disabled {
+      background-color: #B0BEC5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* 백팩 버튼 */
+    .backpack-btn {
+      background-color: #4CAF50;
+    }
+
+    .backpack-btn:hover {
+      background-color: #388E3C;
+    }
+
+    /* 선택지 스타일 */
+    .options-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 6px;
+      margin-bottom: 10px;
+    }
+
+    .option-btn {
+      background-color: #E8EAF6;
+      color: #3F51B5;
+      border: none;
+      padding: 12px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 1rem;
+      text-align: left;
+      transition: background-color 0.3s, transform 0.2s;
+      display: flex;
+      align-items: center;
+      font-weight: 500;
+    }
+
+    .option-btn:hover {
+      background-color: #C5CAE9;
+      transform: translateX(5px);
+    }
+
+    .option-btn:active {
+      transform: translateX(2px);
+    }
+
+    /* 백팩 영역 */
+    .backpack-container {
+      position: fixed;
+      bottom: calc(70px + env(safe-area-inset-bottom, 20px));
+      right: 15px;
+      background-color: white;
+      padding: 15px;
+      border-radius: 15px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      min-width: 200px;
+      z-index: 10;
+      transform: translateY(20px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+
+    .backpack-container.show {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    .backpack-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #333;
+    }
+
+    .backpack-items {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .item {
+      background-color: #FFF9C4;
+      color: #F57F17;
+      padding: 6px 12px;
+      border-radius: 30px;
+      font-size: 0.9rem;
+      animation: popIn 0.4s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0); }
+      70% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+
+    .empty-bag {
+      color: #9E9E9E;
+      font-style: italic;
+    }
+
+    /* 힌트 스타일 */
+    .hint {
+      background-color: #FFF8E1;
+      border-left: 4px solid #FFC107;
+      padding: 12px 16px;
+      margin-top: 6px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      animation: fadeIn 0.5s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* 오류 메시지 스타일 */
+    .error-message {
+      color: #D32F2F;
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin-top: 4px;
+      margin-bottom: 6px;
+      background-color: #FFEBEE;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: shake 0.5s;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-5px); }
+      40%, 80% { transform: translateX(5px); }
+    }
+
+    /* 성공 메시지 스타일 */
+    .success-message {
+      color: #388E3C;
+      padding: 8px 12px;
+      border-radius: 4px;
+      margin-top: 4px;
+      margin-bottom: 6px;
+      background-color: #E8F5E9;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: popIn 0.5s;
+    }
+
+    /* 로딩 효과 */
+    .typing-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 12px;
+      background-color: #E3F2FD;
+      border-radius: 18px;
+      width: fit-content;
+      margin-bottom: 6px;
+    }
+
+    .typing-dot {
+      width: 8px;
+      height: 8px;
+      background-color: #64B5F6;
+      border-radius: 50%;
+      animation: typingBounce 1.4s infinite ease-in-out;
+    }
+
+    .typing-dot:nth-child(1) { animation-delay: 0s; }
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typingBounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    /* 정답 입력 스타일 */
+    .correct-answer {
+      color: #388E3C;
+      font-weight: bold;
+    }
+
+    /* 프로그레스 바 */
+    .progress-container {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 5px;
+      background-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .progress-bar {
+      height: 100%;
+      background-color: #4CAF50;
+      transition: width 0.5s ease;
+    }
+    
+    /* Safari 버그 해결을 위한 빈 고정 요소 */
+    .safari-fix {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 1px;
+      height: 1px;
+    }
+    
+    /* 모바일 대응 추가 스타일 */
+    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+      .input-container {
+        padding-bottom: calc(12px + env(safe-area-inset-bottom, 45px));
+        bottom: env(safe-area-inset-bottom, 0);
+      }
+    }
+    
+    /* 동적 뷰포트 높이 지원 브라우저 */
+    @supports (height: 100dvh) {
+      .container {
+        min-height: 100dvh;
+        height: 100dvh;
+      }
+    }
+    
+    /* 작은 화면에서 백팩 버튼 위치 조정 */
+    @media (max-height: 600px) {
+      .backpack-container {
+        bottom: calc(120px + env(safe-area-inset-bottom, 45px));
+      }
+      
+      .chat-container {
+        padding-bottom: 105px;
+      }
+    }
+    
+    /* iOS 키보드 대응 */
+    @supports (-webkit-touch-callout: none) {
+      .input-container {
+        position: fixed;
+        bottom: 0;
+        transform: translateZ(0);
+        -webkit-transform: translateZ(0);
+        will-change: transform;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Safari 버그 해결을 위한 빈 고정 요소 -->
+  <div class="safari-fix"></div>
+  
+  <div class="container">
+    <!-- 위치 배경 영역 -->
+    <div class="location-bg" id="locationBg">
+      <div class="character" id="locationCharacter">🤖</div>
+      <div class="location-title" id="locationTitle">👋 파이썬 탐험대의 신비한 여행</div>
+      <div class="progress-container">
+        <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+      </div>
+    </div>
+
+    <!-- 채팅 영역 -->
+    <div class="chat-container" id="chatContainer"></div>
+
+    <!-- 입력 영역 -->
+    <div class="input-container">
+      <input type="text" class="message-input" id="messageInput" placeholder="메시지를 입력하세요...">
+      <button class="btn" id="sendBtn">📤</button>
+      <button class="btn backpack-btn" id="backpackBtn">🎒</button>
+    </div>
+  </div>
+
+  <!-- 백팩 컨테이너 -->
+  <div class="backpack-container" id="backpackContainer">
+    <div class="backpack-title">🎒 내가방</div>
+    <div class="backpack-items" id="backpackItems">
+      <div class="empty-bag">가방이 비어있어요</div>
+    </div>
+  </div>
+
+  <script>
+    // 동적 뷰포트 높이 설정 - 모바일 브라우저 바 대응
+    function setViewportHeight() {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    }
+    
+    // 초기 설정 및 리사이즈 이벤트
+    setViewportHeight();
+    window.addEventListener('resize', setViewportHeight);
+    window.addEventListener('orientationchange', setViewportHeight);
+    
+    // Visual Viewport API 사용 (지원하는 경우)
+    if ('visualViewport' in window) {
+      window.visualViewport.addEventListener('resize', () => {
+        const height = window.visualViewport.height;
+        const bottomOffset = window.innerHeight - height;
+        const inputContainer = document.querySelector('.input-container');
+        if (inputContainer) {
+          inputContainer.style.bottom = `${bottomOffset}px`;
+        }
+      });
+    }
+    
+    // DOM 요소
+    const chatContainer = document.getElementById('chatContainer');
+    const messageInput = document.getElementById('messageInput');
+    const sendBtn = document.getElementById('sendBtn');
+    const backpackBtn = document.getElementById('backpackBtn');
+    const backpackContainer = document.getElementById('backpackContainer');
+    const backpackItems = document.getElementById('backpackItems');
+    const locationBg = document.getElementById('locationBg');
+    const locationTitle = document.getElementById('locationTitle');
+    const locationCharacter = document.getElementById('locationCharacter');
+    const progressBar = document.getElementById('progressBar');
+
+    // 게임 상태 객체
+    const game = {
+      playerName: '',
+      currentStage: 'intro',
+      bag: [],
+      isTyping: false,
+      
+      // 백팩 업데이트
+      updateBackpack: function() {
+        if (this.bag.length === 0) {
+          backpackItems.innerHTML = '<div class="empty-bag">가방이 비어있어요</div>';
+          return;
+        }
+
+        backpackItems.innerHTML = '';
+        this.bag.forEach(item => {
+          const itemElement = document.createElement('div');
+          itemElement.className = 'item';
+          const emoji = itemEmojis[item] || '🔮';
+          itemElement.textContent = `${emoji} ${item}`;
+          backpackItems.appendChild(itemElement);
+        });
+      },
+      
+      // 코디 메시지 추가
+      addCodiMessage: function(text, callback) {
+        // 이미 타이핑 중이면 무시
+        if (this.isTyping) return;
+        
+        this.isTyping = true;
+        
+        // 타이핑 표시기 추가
+        const typingIndicator = document.createElement('div');
+        typingIndicator.className = 'typing-indicator';
+        typingIndicator.innerHTML = `
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+          <div class="typing-dot"></div>
+        `;
+        chatContainer.appendChild(typingIndicator);
+        scrollToBottom();
+        
+        // 타이핑 효과 시작 전 잠시 대기
+        setTimeout(() => {
+          // 타이핑 표시기 제거
+          chatContainer.removeChild(typingIndicator);
+          
+          // 메시지 요소 생성
+          const messageElement = document.createElement('div');
+          messageElement.className = 'message codi-message';
+          
+          const senderElement = document.createElement('div');
+          senderElement.className = 'sender-name';
+          senderElement.textContent = '코디 🤖';
+          
+          const textElement = document.createElement('div');
+          textElement.textContent = '';
+          
+          messageElement.appendChild(senderElement);
+          messageElement.appendChild(textElement);
+          chatContainer.appendChild(messageElement);
+          
+          // 타이핑 효과
+          let i = 0;
+          const typingSpeed = 20;
+          
+          const typeChar = () => {
+            if (i < text.length) {
+              textElement.textContent += text.charAt(i);
+              i++;
+              scrollToBottom();
+              setTimeout(typeChar, typingSpeed);
+            } else {
+              // 타이핑 완료
+              this.isTyping = false;
+              if (callback) {
+                setTimeout(callback, 300);
+              }
+            }
+          };
+          
+          typeChar();
+        }, 500);
+      },
+      
+      // 플레이어 메시지 추가
+      addPlayerMessage: function(text) {
+        const messageElement = document.createElement('div');
+        messageElement.className = 'message player-message';
+        
+        const senderElement = document.createElement('div');
+        senderElement.className = 'sender-name';
+        senderElement.textContent = this.playerName || '탐험가';
+        
+        const textElement = document.createElement('div');
+        textElement.textContent = text;
+        
+        messageElement.appendChild(senderElement);
+        messageElement.appendChild(textElement);
+        chatContainer.appendChild(messageElement);
+        
+        scrollToBottom();
+      },
+      
+      // 선택지 버튼 추가
+      addOptions: function(options, correctOption, nextStage) {
+        const optionsContainer = document.createElement('div');
+        optionsContainer.className = 'options-container';
+        
+        // 입력창 비활성화
+        messageInput.disabled = true;
+        messageInput.placeholder = '선택지를 골라주세요...';
+        
+        options.forEach(option => {
+          const optionBtn = document.createElement('button');
+          optionBtn.className = 'option-btn';
+          optionBtn.textContent = option;
+          
+          optionBtn.addEventListener('click', () => {
+            // 모든 버튼 비활성화
+            document.querySelectorAll('.option-btn').forEach(btn => {
+              btn.disabled = true;
+              btn.style.opacity = 0.5;
+            });
+            
+            // 선택한 버튼 강조
+            optionBtn.style.opacity = 1;
+            optionBtn.style.backgroundColor = '#C5CAE9';
+            
+            // 선택 메시지 표시
+            this.addPlayerMessage(option);
+            
+            // 선택지 컨테이너 제거
+            setTimeout(() => {
+              chatContainer.removeChild(optionsContainer);
+              
+              // 입력창 다시 활성화
+              messageInput.disabled = false;
+              messageInput.placeholder = '파이썬 명령어를 입력하세요...';
+              
+              // 정답 여부 확인
+              if (option === correctOption) {
+                // 정답인 경우
+                this.showSuccess();
+                
+                // 명령어 실행 (가방에 아이템 추가/제거)
+                this.executeCommand(option);
+                
+                // 다음 스테이지로 이동
+                setTimeout(() => {
+                  this.goToStage(nextStage);
+                }, 1000);
+              } else {
+                // 오답인 경우
+                this.showError();
+              }
+            }, 500);
+          });
+          
+          optionsContainer.appendChild(optionBtn);
+        });
+        
+        chatContainer.appendChild(optionsContainer);
+        scrollToBottom();
+      },
+      
+      // 커스텀 입력 처리 (직접 입력하는 단계용)
+      handleCustomInput: function(input, correctAnswer, nextStage) {
+        if (input === correctAnswer || 
+            (correctAnswer === '내가방.remove' && input.startsWith('내가방.remove'))) {
+          // 정답인 경우
+          this.showSuccess();
+          
+          // 명령어 실행
+          this.executeCommand(input);
+          
+          // 다음 스테이지로 이동
+          setTimeout(() => {
+            this.goToStage(nextStage);
+          }, 1000);
+        } else {
+          // 오답인 경우
+          this.showError();
+        }
+      },
+      
+      // 명령어 실행 (가방 관리)
+      executeCommand: function(command) {
+        if (command.includes('내가방.append')) {
+          const matches = command.match(/\'(.*?)\'/);
+          if (matches && matches[1]) {
+            const item = matches[1];
+            this.bag.push(item);
+            this.updateBackpack();
+          }
+        } else if (command.includes('내가방.remove')) {
+          const matches = command.match(/\'(.*?)\'/);
+          if (matches && matches[1]) {
+            const item = matches[1];
+            this.bag = this.bag.filter(i => i !== item);
+            this.updateBackpack();
+          }
+        }
+      },
+      
+      // 성공 메시지 표시
+      showSuccess: function() {
+        const successElement = document.createElement('div');
+        successElement.className = 'success-message';
+        successElement.innerHTML = '✅ 정확해요! 잘했어요!';
+        chatContainer.appendChild(successElement);
+        scrollToBottom();
+      },
+      
+      // 오류 메시지 표시
+      showError: function() {
+        const errorElement = document.createElement('div');
+        errorElement.className = 'error-message';
+        errorElement.innerHTML = '❌ 아쉽게도 틀렸어요! 다시 도전해볼까요?';
+        chatContainer.appendChild(errorElement);
+        scrollToBottom();
+        
+        // 재시작 버튼 추가
+        setTimeout(() => {
+          const restartContainer = document.createElement('div');
+          restartContainer.className = 'options-container';
+          
+          const restartBtn = document.createElement('button');
+          restartBtn.className = 'option-btn';
+          restartBtn.innerHTML = '🔄 처음부터 다시 시작하기';
+          
+          restartBtn.addEventListener('click', () => {
+            restartContainer.remove();
+            this.reset();
+          });
+          
+          restartContainer.appendChild(restartBtn);
+          chatContainer.appendChild(restartContainer);
+          scrollToBottom();
+          
+          // 입력창 비활성화
+          messageInput.disabled = true;
+          messageInput.placeholder = '다시 시작 버튼을 눌러주세요...';
+          sendBtn.disabled = true;
+        }, 1000);
+      },
+      
+      // 게임 스테이지 진행
+      goToStage: function(stageName) {
+        this.currentStage = stageName;
+        
+        // 스테이지별 처리
+        switch(stageName) {
+          case 'intro':
+            updateLocation('start', 0);
+            this.addCodiMessage('안녕! 👋 나는 코디야. 파이썬 프로그래밍을 가르쳐 줄 로봇이야. 너의 이름은 뭐니?');
+            break;
+            
+          case 'start':
+            updateLocation('start', 0);
+            this.addCodiMessage(`${this.playerName}아(야), 반가워! 🤩 이 특별한 가방은 '내가방'이라고 불러. 파이썬 명령어로 작동하는 마법 가방이야!`, () => {
+              this.addCodiMessage('내가방 = []', () => {
+                this.addCodiMessage('가방이 비어있어. 이제 신비한 세계로 모험을 떠날 준비가 되었니?', () => {
+                  this.addOptions(
+                    ['네, 모험을 시작할래요! 🚀'], 
+                    '네, 모험을 시작할래요! 🚀',
+                    'forest-1'
+                  );
+                });
+              });
+            });
+            break;
+            
+          case 'forest-1':
+            updateLocation('forest', 20);
+            this.addCodiMessage('우리는 신비의 숲에 도착했어! 🌲 숲에서는 길을 잃지 않게 여러 물건이 필요해.', () => {
+              this.addCodiMessage('가방에 물건을 넣으려면 어떤 명령어를 사용해야 할까?', () => {
+                this.addOptions(
+                  [
+                    '내가방.append(\'물병\')',
+                    '내가방.add(\'물병\')',
+                    '내가방.put(\'물병\')'
+                  ],
+                  '내가방.append(\'물병\')',
+                  'forest-2'
+                );
+              });
+            });
+            break;
+            
+          case 'forest-2':
+            this.addCodiMessage('잘했어! 💧 물병이 가방에 들어갔어.', () => {
+              this.addCodiMessage('이제 지도도 필요할 것 같아. 지도를 가방에 넣어보자!', () => {
+                this.addOptions(
+                  [
+                    '내가방.append(\'지도\')',
+                    '내가방.add(\'지도\')',
+                    '내가방.put(\'지도\')'
+                  ],
+                  '내가방.append(\'지도\')',
+                  'forest-3'
+                );
+              });
+            });
+            break;
+            
+          case 'forest-3':
+            this.addCodiMessage('좋아! 🗺️ 지도도 넣었어. 이제 손전등도 필요해. 넣어볼까?', () => {
+              this.addOptions(
+                [
+                  '내가방.append(\'손전등\')',
+                  '내가방.appand(\'손전등\')',
+                  '내가방.apppend(\'손전등\')'
+                ],
+                '내가방.append(\'손전등\')',
+                'forest-wolf'
+              );
+            });
+            break;
+            
+          case 'forest-wolf':
+            this.addCodiMessage('앗! 🐺 늑대가 나타났어! 빨리 도망가야 해!', () => {
+              this.addCodiMessage('하지만 가방이 너무 무거워... 손전등을 꺼내야 할 것 같아!', () => {
+                this.addCodiMessage('가방에서 물건을 빼려면 어떤 명령어를 사용해야 할까?', () => {
+                  this.addOptions(
+                    [
+                      '내가방.remove(\'손전등\')',
+                      '내가방.delete(\'손전등\')',
+                      '내가방.take(\'손전등\')'
+                    ],
+                    '내가방.remove(\'손전등\')',
+                    'sea-1'
+                  );
+                });
+              });
+            });
+            break;
+            
+          case 'sea-1':
+            updateLocation('sea', 40);
+            this.addCodiMessage('휴, 무사히 늑대를 피했어! 🏃‍♂️ 이제 우리는 신비의 바다에 도착했어.', () => {
+              this.addCodiMessage('바다에서는 새로운 물건들이 필요해. 먼저 가방에 물건이 몇 개 있는지 확인해볼까?', () => {
+                this.addOptions(
+                  [
+                    '개수 = len(내가방)',
+                    '개수 = count(내가방)'
+                  ],
+                  '개수 = len(내가방)',
+                  'sea-2'
+                );
+              });
+            });
+            break;
+            
+          case 'sea-2':
+            this.addCodiMessage(`가방에는 ${this.bag.length}개의 물건이 있어! 📊`, () => {
+              this.addCodiMessage('이제 수영복을 가방에 넣어보자. 명령어는 기억나니?', () => {
+                this.addCodiMessage('힌트 : 내가방.a??e??(\'수영복\')');
+                // 직접 입력 모드로 설정
+                messageInput.placeholder = '파이썬 명령어를 입력하세요...';
+              });
+            });
+            break;
+            
+          case 'sea-monster':
+            this.addCodiMessage('수영복을 넣었어! 🩱 좋아, 이제 바다를 탐험할 준비가 됐어!', () => {
+              this.addCodiMessage('앗! 🦑 바다 괴물이 나타났어! 괴물이 우리에게 뭔가를 원하는 것 같아...', () => {
+                this.addCodiMessage('괴물이 지도를 찾고 있어! 지도를 괴물에게 주려면 가방에서 빼야 해!', () => {
+                  this.addCodiMessage('힌트: 내가방.rem?ve(\'지도\')를 사용해 지도를 빼보자!');
+                  // 직접 입력 모드로 설정
+                  messageInput.placeholder = '파이썬 명령어를 입력하세요...';
+                });
+              });
+            });
+            break;
+            
+          case 'desert-1':
+            updateLocation('desert', 60);
+            this.addCodiMessage('괴물에게 지도를 주고 무사히 지나왔어! 👏 이제 우리는 신비의 사막에 도착했어.', () => {
+              this.addCodiMessage('사막에서는 물이 정말 중요해. 가방에 물을 넣어보자!', () => {
+                this.addCodiMessage('이제는 힌트 없이 직접 명령어를 입력해봐. 가방에 물을 추가하는 명령어를 입력해줘!');
+                // 직접 입력 모드로 설정
+                messageInput.placeholder = '파이썬 명령어를 입력하세요...';
+              });
+            });
+            break;
+            
+          case 'desert-2':
+            this.addCodiMessage('잘했어! 💦 물을 가방에 넣었어. 사막은 낮에는 뜨겁고 밤에는 추워.', () => {
+              this.addCodiMessage('이제 모자도 필요할 것 같아. 모자를 가방에 추가해보자!');
+              // 직접 입력 모드로 설정
+              messageInput.placeholder = '파이썬 명령어를 입력하세요...';
+            });
+            break;
+            
+          case 'desert-3':
+            this.addCodiMessage('좋아! 👒 모자도 넣었어.', () => {
+              this.addCodiMessage('이제 선크림도 필요해. 선크림을 가방에 추가해보자!');
+              // 직접 입력 모드로 설정
+              messageInput.placeholder = '파이썬 명령어를 입력하세요...';
+            });
+            break;
+            
+          case 'desert-storm':
+            this.addCodiMessage('앗! 🌪️ 모래폭풍이 다가오고 있어! 가방이 너무 무거워서 피하기 어려워!', () => {
+              this.addCodiMessage('가방에 뭐가 있는지 확인하고 필요없는 물건을 빼야 해!', () => {
+                this.addCodiMessage(`현재 내가방: ${JSON.stringify(this.bag)}`, () => {
+                  this.addCodiMessage('물건을 하나 빼는 명령어를 입력해봐.');
+                  // 직접 입력 모드로 설정
+                  messageInput.placeholder = '파이썬 명령어를 입력하세요...';
+                });
+              });
+            });
+            break;
+            
+          case 'mountain-1':
+            updateLocation('mountain', 80);
+            this.addCodiMessage('모래폭풍을 무사히 피했어! 😅 이제 우리는 신비의 산에 도착했어.', () => {
+              this.addCodiMessage('산을 오르기 위해 우리 가방에 있는 물건들을 확인해보자. 가방에 몇 개의 물건이 있는지 확인하는 명령어를 입력해봐!');
+              // 직접 입력 모드로 설정
+              messageInput.placeholder = '파이썬 명령어를 입력하세요...';
+            });
+            break;
+            
+          case 'mountain-2':
+            this.addCodiMessage(`가방에는 ${this.bag.length}개의 물건이 있어! 🔢`, () => {
+              this.addCodiMessage('산을 오르려면 로프가 필요해. 로프를 가방에 추가해보자!');
+              // 직접 입력 모드로 설정
+              messageInput.placeholder = '파이썬 명령어를 입력하세요...';
+            });
+            break;
+            
+          case 'final':
+            updateLocation('end', 100);
+            this.addCodiMessage('축하해! 🎉 우리는 모든 여행을 마치고 집으로 돌아왔어!', () => {
+              this.addCodiMessage(`${this.playerName}아(야), 정말 대단했어! 이제 너는 파이썬 리스트를 사용하는 방법을 알게 됐어!`, () => {
+                this.addCodiMessage('내가방에 append로 물건 넣기, remove로 물건 빼기, len으로 개수 확인하는 방법을 모두 배웠지!', () => {
+                  this.addCodiMessage('이런 파이썬 명령어들은 실제 프로그래밍에서도 똑같이 사용할 수 있어. 정말 멋진 모험이었어! 👏', () => {
+                    this.addOptions(
+                      ['다시 시작하기 🔄'],
+                      '다시 시작하기 🔄',
+                      'restart'
+                    );
+                  });
+                });
+              });
+            });
+            break;
+            
+          case 'restart':
+            this.reset();
+            break;
+        }
+      },
+      
+      // 게임 초기화
+      reset: function() {
+        this.playerName = '';
+        this.bag = [];
+        
+        chatContainer.innerHTML = '';
+        messageInput.disabled = false;
+        messageInput.placeholder = '메시지를 입력하세요...';
+        sendBtn.disabled = false;
+        
+        this.updateBackpack();
+        this.goToStage('intro');
+      },
+      
+      // 메시지 입력 처리
+      handleInput: function(input) {
+        if (!input.trim()) return;
+        
+        // 입력 타입에 따른 처리
+        if (this.currentStage === 'intro') {
+          this.playerName = input;
+          this.addPlayerMessage(input);
+          this.goToStage('start');
+        } else if (this.currentStage === 'sea-2') {
+          this.addPlayerMessage(input);
+          this.handleCustomInput(input, '내가방.append(\'수영복\')', 'sea-monster');
+        } else if (this.currentStage === 'sea-monster') {
+          this.addPlayerMessage(input);
+          this.handleCustomInput(input, '내가방.remove(\'지도\')', 'desert-1');
+        } else if (this.currentStage === 'desert-1') {
+          this.addPlayerMessage(input);
+          this.handleCustomInput(input, '내가방.append(\'물\')', 'desert-2');
+        } else if (this.currentStage === 'desert-2') {
+          this.addPlayerMessage(input);
+          this.handleCustomInput(input, '내가방.append(\'모자\')', 'desert-3');
+        } else if (this.currentStage === 'desert-3') {
+          this.addPlayerMessage(input);
+          this.handleCustomInput(input, '내가방.append(\'선크림\')', 'desert-storm');
+        } else if (this.currentStage === 'desert-storm') {
+          this.addPlayerMessage(input);
+          this.handleCustomInput(input, '내가방.remove', 'mountain-1');
+        } else if (this.currentStage === 'mountain-1') {
+          this.addPlayerMessage(input);
+          this.handleCustomInput(input, 'len(내가방)', 'mountain-2');
+        } else if (this.currentStage === 'mountain-2') {
+          this.addPlayerMessage(input);
+          this.handleCustomInput(input, '내가방.append(\'로프\')', 'final');
+        }
+      }
+    };
+
+    // 위치별 배경 및 아이콘
+    const locations = {
+      start: {
+        bg: 'linear-gradient(to bottom, #E3E4E5 0%, #D4CECE 100%)',
+        title: '👋 파이썬 탐험대의 신비한 여행',
+        character: '🤖'
+      },
+      forest: {
+        bg: 'linear-gradient(to bottom, #A8E6CF 0%, #7FDD9E 100%)',
+        title: '🌲 신비의 숲',
+        character: '🦝'
+      },
+      sea: {
+        bg: 'linear-gradient(to bottom, #87CEEB 0%, #4682B4 100%)',
+        title: '🌊 신비의 바다',
+        character: '🐠'
+      },
+      desert: {
+        bg: 'linear-gradient(to bottom, #FFE5B4 0%, #FFA500 100%)',
+        title: '🏜️ 신비의 사막',
+        character: '🐪'
+      },
+      mountain: {
+        bg: 'linear-gradient(to bottom, #E0E0E0 0%, #999999 100%)',
+        title: '⛰️ 신비의 산',
+        character: '🦅'
+      },
+      end: {
+        bg: 'linear-gradient(to bottom, #DDA0DD 0%, #9370DB 100%)',
+        title: '🏆 모험 완료!',
+        character: '🎉'
+      }
+    };
+
+    // 아이템 이모지 매핑
+    const itemEmojis = {
+      '물병': '💧',
+      '지도': '🗺️',
+      '손전등': '🔦',
+      '수영복': '🩱',
+      '물': '💦',
+      '모자': '👒',
+      '선크림': '🧴',
+      '로프': '🧵'
+    };
+
+    // 위치 업데이트
+    function updateLocation(locationKey, progress) {
+      const location = locations[locationKey];
+      locationBg.style.background = location.bg;
+      locationTitle.textContent = location.title;
+      locationCharacter.textContent = location.character;
+      progressBar.style.width = `${progress}%`;
+    }
+
+    // 스크롤을 항상 아래로
+    function scrollToBottom() {
+      setTimeout(() => {
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+      }, 10);
+    }
+
+    // 백팩 토글
+    function toggleBackpack() {
+      backpackContainer.classList.toggle('show');
+      game.updateBackpack();
+    }
+
+    // 이벤트 리스너
+    sendBtn.addEventListener('click', () => {
+      if (!messageInput.disabled && messageInput.value.trim()) {
+        const input = messageInput.value.trim();
+        messageInput.value = '';
+        game.handleInput(input);
+      }
+    });
+
+    messageInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter' && !messageInput.disabled && messageInput.value.trim()) {
+        const input = messageInput.value.trim();
+        messageInput.value = '';
+        game.handleInput(input);
+      }
+    });
+
+    backpackBtn.addEventListener('click', toggleBackpack);
+
+    // 게임 시작
+    game.goToStage('intro');
+  </script>
+</body>
+</html>
