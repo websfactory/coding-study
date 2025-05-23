@@ -1002,9 +1002,9 @@
             
           case 'desert-storm':
             this.addCodiMessage('앗! 🌪️ 모래폭풍이 다가오고 있어! 가방이 너무 무거워서 피하기 어려워!', () => {
-              this.addCodiMessage('가방에 뭐가 있는지 확인하고 필요없는 물건을 빼야 해!', () => {
+              this.addCodiMessage("가장 무거운 '선크림'을 빼자!", () => {
                 this.addCodiMessage(`현재 내가방: ${JSON.stringify(this.bag)}`, () => {
-                  this.addCodiMessage('물건을 하나 빼는 명령어를 입력해봐.');
+                  this.addCodiMessage('선크림을 빼는 명령어를 입력해봐.');
                   // 직접 입력 모드로 설정
                   messageInput.placeholder = '파이썬 명령어를 입력하세요...';
                 });
@@ -1029,9 +1029,9 @@
             break;
 
           case 'altar-insert':
-            this.addCodiMessage('좋아! 그런데 불의 수정은 두 번째 칸에 있어야 해.', () => {
-              this.addCodiMessage('현재 내가방: ' + JSON.stringify(this.bag), () => {
-                this.addCodiMessage("불의 수정을 두 번째 위치에 넣어보자.", () => {
+            this.addCodiMessage(`현재 내가방: ${JSON.stringify(this.bag)}`, () => {
+              this.addCodiMessage('방금 넣은 불의 수정은 두 번째 칸에 있어야 해.', () => {
+                this.addCodiMessage('불의 수정을 두 번째 위치에 넣어보자.', () => {
                   messageInput.placeholder = '파이썬 명령어를 입력하세요...';
                 });
               });
@@ -1051,7 +1051,7 @@
             
           case 'mountain-1':
             updateLocation('mountain', 80);
-            this.addCodiMessage('몬스터에게 선물을 주고 길을 통과했어! 🎁', () => {
+            this.addCodiMessage(`몬스터에게 '${this.poppedItem}'을(를) 건네주고 무사히 지나왔어!`, () => {
               this.addCodiMessage('산을 오르기 전에 우리 가방에 몇 개의 물건이 있는지 확인해보자. 명령어를 입력해봐!');
               messageInput.placeholder = '파이썬 명령어를 입력하세요...';
             });
